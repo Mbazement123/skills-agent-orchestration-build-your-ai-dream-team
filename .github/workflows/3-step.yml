@@ -1,0 +1,357 @@
+name: Step 3
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - app/**
+      - .vscode/launch.json
+
+permissions:
+  contents: write
+  actions: write
+  issues: write
+
+env:
+  STEP_4_FILE: ".github/steps/4-step.md"
+
+jobs:
+  find_exercise:
+    if: github.event_name != 'push' || (github.event.created == false && github.event.head_commit.message != 'Initial commit')
+    name: Find Exercise Issue
+    uses: skills/exercise-toolkit/.github/workflows/find-exercise-issue.yml@v0.9.3
+
+  check_step_work:
+    name: Check step work
+    runs-on: ubuntu-latest
+    needs: [find_exercise]
+    env:
+      ISSUE_REPOSITORY: ${{ github.repository }}
+      ISSUE_NUMBER: ${{ needs.find_exercise.outputs.issue-number }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Get response templates
+        uses: actions/checkout@v6
+        with:
+          repository: skills/exercise-toolkit
+          path: exercise-toolkit
+          ref: v0.9.3
+
+      - name: Find last comment
+        id: find-last-comment
+        uses: peter-evans/find-comment@v4
+        with:
+          repository: ${{ env.ISSUE_REPOSITORY }}
+          issue-number: ${{ env.ISSUE_NUMBER }}
+          comment-author: github-actions[bot]
+          direction: last
+
+      - name: Update comment - checking work
+        uses: GrantBirki/comment@v2.1.1
+        with:
+          repository: ${{ env.ISSUE_REPOSITORY }}
+          issue-number: ${{ env.ISSUE_NUMBER }}
+          comment-id: ${{ steps.find-last-comment.outputs.comment-id }}
+          file: exercise-toolkit/markdown-templates/step-feedback/checking-work.md
+          edit-mode: replace
+
+      - name: Check index exists
+        id: check-index-file
+        continue-on-error: true
+        uses: skills/exercise-toolkit/actions/file-exists@v0.9.3
+        with:
+          file: app/index.html
+
+      - name: Check stylesheet exists
+        id: check-styles-file
+        continue-on-error: true
+        uses: skills/exercise-toolkit/actions/file-exists@v0.9.3
+        with:
+          file: app/styles.css
+
+      - name: Check data file exists
+        id: check-data-file
+        continue-on-error: true
+        uses: skills/exercise-toolkit/actions/file-exists@v0.9.3
+        with:
+          file: app/project-data.json
+
+      - name: Check launch configuration exists
+        id: check-launch-file
+        continue-on-error: true
+        uses: skills/exercise-toolkit/actions/file-exists@v0.9.3
+        with:
+          file: .vscode/launch.json
+
+      - name: Check dashboard title
+        id: check-project-pulse
+        continue-on-error: true
+        uses: skills/action-keyphrase-checker@v2
+        with:
+          text-file: app/index.html
+          keyphrase: Project Pulse
+          case-sensitive: false
+
+      - name: Check stylesheet reference
+        id: check-styles-reference
+        continue-on-error: true
+        uses: skills/action-keyphrase-checker@v2
+        with:
+          text-file: app/index.html
+          keyphrase: styles.css
+          case-sensitive: false
+
+      - name: Check data reference
+        id: check-data-reference
+        continue-on-error: true
+        uses: skills/action-keyphrase-checker@v2
+        with:
+          text-file: app/index.html
+          keyphrase: project-data.json
+          case-sensitive: false
+
+      - name: Check project card markup
+        id: check-project-card-markup
+        continue-on-error: true
+        uses: skills/action-keyphrase-checker@v2
+        with:
+          text-file: app/index.html
+          keyphrase: project-card
+          case-sensitive: false
+
+      - name: Check rendered status field
+        id: check-status-markup
+        continue-on-error: true
+        uses: skills/action-keyphrase-checker@v2
+        with:
+          text-file: app/index.html
+          keyphrase: status
+          case-sensitive: false
+
+      - name: Check rendered activity field
+        id: check-activity-markup
+        continue-on-error: true
+        uses: skills/action-keyphrase-checker@v2
+        with:
+          text-file: app/index.html
+          keyphrase: recentActivity
+          case-sensitive: false
+
+      - name: Check rendered priority field
+        id: check-priority-markup
+        continue-on-error: true
+        uses: skills/action-keyphrase-checker@v2
+        with:
+          text-file: app/index.html
+          keyphrase: priority
+          case-sensitive: false
+
+      - name: Check dashboard styling language
+        id: check-dashboard-styles
+        continue-on-error: true
+        uses: skills/action-keyphrase-checker@v2
+        with:
+          text-file: app/styles.css
+          keyphrase: .dashboard
+          case-sensitive: false
+
+      - name: Check project card styling
+        id: check-project-card-styles
+        continue-on-error: true
+        uses: skills/action-keyphrase-checker@v2
+        with:
+          text-file: app/styles.css
+          keyphrase: .project-card
+          case-sensitive: false
+
+      - name: Check rounded card styling
+        id: check-border-radius
+        continue-on-error: true
+        uses: skills/action-keyphrase-checker@v2
+        with:
+          text-file: app/styles.css
+          keyphrase: border-radius
+          case-sensitive: false
+
+      - name: Check card shadow styling
+        id: check-box-shadow
+        continue-on-error: true
+        uses: skills/action-keyphrase-checker@v2
+        with:
+          text-file: app/styles.css
+          keyphrase: box-shadow
+          case-sensitive: false
+
+      - name: Check project data key
+        id: check-projects-data
+        continue-on-error: true
+        uses: skills/action-keyphrase-checker@v2
+        with:
+          text-file: app/project-data.json
+          keyphrase: projects
+          case-sensitive: false
+
+      - name: Check project name data
+        id: check-name-data
+        continue-on-error: true
+        uses: skills/action-keyphrase-checker@v2
+        with:
+          text-file: app/project-data.json
+          keyphrase: name
+          case-sensitive: false
+
+      - name: Check project owner data
+        id: check-owner-data
+        continue-on-error: true
+        uses: skills/action-keyphrase-checker@v2
+        with:
+          text-file: app/project-data.json
+          keyphrase: owner
+          case-sensitive: false
+
+      - name: Check project status data
+        id: check-status-data
+        continue-on-error: true
+        uses: skills/action-keyphrase-checker@v2
+        with:
+          text-file: app/project-data.json
+          keyphrase: status
+          case-sensitive: false
+
+      - name: Check project activity data
+        id: check-activity-data
+        continue-on-error: true
+        uses: skills/action-keyphrase-checker@v2
+        with:
+          text-file: app/project-data.json
+          keyphrase: recentActivity
+          case-sensitive: false
+
+      - name: Check project priority data
+        id: check-priority-data
+        continue-on-error: true
+        uses: skills/action-keyphrase-checker@v2
+        with:
+          text-file: app/project-data.json
+          keyphrase: priority
+          case-sensitive: false
+
+      - name: Check project data JSON
+        id: check-json
+        continue-on-error: true
+        run: python3 -m json.tool app/project-data.json >/dev/null
+
+      - name: Check launch configuration JSON
+        id: check-launch-json
+        continue-on-error: true
+        run: python3 -m json.tool .vscode/launch.json >/dev/null
+
+      - name: Check launch name
+        id: check-launch-name
+        continue-on-error: true
+        uses: skills/action-keyphrase-checker@v2
+        with:
+          text-file: .vscode/launch.json
+          keyphrase: Run Project Pulse Dashboard
+          case-sensitive: false
+
+      - name: Check launch target
+        id: check-launch-target
+        continue-on-error: true
+        uses: skills/action-keyphrase-checker@v2
+        with:
+          text-file: .vscode/launch.json
+          keyphrase: index.html
+          case-sensitive: false
+
+      - name: Update comment - step results
+        uses: GrantBirki/comment@v2.1.1
+        with:
+          repository: ${{ env.ISSUE_REPOSITORY }}
+          issue-number: ${{ env.ISSUE_NUMBER }}
+          comment-id: ${{ steps.find-last-comment.outputs.comment-id }}
+          edit-mode: replace
+          file: exercise-toolkit/markdown-templates/step-feedback/step-results-table.md
+          vars: |
+            step_number: 3
+            results_table:
+              - description: "Checked for app/index.html"
+                passed: ${{ steps.check-index-file.outcome == 'success' }}
+              - description: "Checked for app/styles.css"
+                passed: ${{ steps.check-styles-file.outcome == 'success' }}
+              - description: "Checked for app/project-data.json"
+                passed: ${{ steps.check-data-file.outcome == 'success' }}
+              - description: "Checked for .vscode/launch.json"
+                passed: ${{ steps.check-launch-file.outcome == 'success' }}
+              - description: "Checked Project Pulse dashboard content"
+                passed: ${{ steps.check-project-pulse.outcome == 'success' && steps.check-styles-reference.outcome == 'success' && steps.check-data-reference.outcome == 'success' && steps.check-dashboard-styles.outcome == 'success' && steps.check-projects-data.outcome == 'success' }}
+              - description: "Checked that the dashboard renders project cards"
+                passed: ${{ steps.check-project-card-markup.outcome == 'success' && steps.check-status-markup.outcome == 'success' && steps.check-activity-markup.outcome == 'success' && steps.check-priority-markup.outcome == 'success' }}
+              - description: "Checked for polished project card styling"
+                passed: ${{ steps.check-project-card-styles.outcome == 'success' && steps.check-border-radius.outcome == 'success' && steps.check-box-shadow.outcome == 'success' }}
+              - description: "Checked project data includes name, owner, status, recent activity, and priority"
+                passed: ${{ steps.check-name-data.outcome == 'success' && steps.check-owner-data.outcome == 'success' && steps.check-status-data.outcome == 'success' && steps.check-activity-data.outcome == 'success' && steps.check-priority-data.outcome == 'success' }}
+              - description: "Checked that project-data.json parses as JSON"
+                passed: ${{ steps.check-json.outcome == 'success' }}
+              - description: "Checked that .vscode/launch.json parses as JSON"
+                passed: ${{ steps.check-launch-json.outcome == 'success' }}
+              - description: "Checked launch configuration file content"
+                passed: ${{ steps.check-launch-name.outcome == 'success' && steps.check-launch-target.outcome == 'success' }}
+
+      - name: Fail job if not all checks passed
+        if: contains(steps.*.outcome, 'failure')
+        run: exit 1
+
+  post_next_step_content:
+    name: Post next step content
+    needs: [find_exercise, check_step_work]
+    runs-on: ubuntu-latest
+    env:
+      ISSUE_REPOSITORY: ${{ github.repository }}
+      ISSUE_NUMBER: ${{ needs.find_exercise.outputs.issue-number }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Get response templates
+        uses: actions/checkout@v6
+        with:
+          repository: skills/exercise-toolkit
+          path: exercise-toolkit
+          ref: v0.9.3
+
+      - name: Create comment - step finished
+        uses: GrantBirki/comment@v2.1.1
+        with:
+          repository: ${{ env.ISSUE_REPOSITORY }}
+          issue-number: ${{ env.ISSUE_NUMBER }}
+          file: exercise-toolkit/markdown-templates/step-feedback/step-finished-prepare-next-step.md
+          vars: |
+            next_step_number: 4
+
+      - name: Create comment - add step content
+        uses: GrantBirki/comment@v2.1.1
+        with:
+          repository: ${{ env.ISSUE_REPOSITORY }}
+          issue-number: ${{ env.ISSUE_NUMBER }}
+          file: ${{ env.STEP_4_FILE }}
+
+      - name: Create comment - watching for progress
+        uses: GrantBirki/comment@v2.1.1
+        with:
+          repository: ${{ env.ISSUE_REPOSITORY }}
+          issue-number: ${{ env.ISSUE_NUMBER }}
+          file: exercise-toolkit/markdown-templates/step-feedback/watching-for-progress.md
+
+      - name: Disable current workflow and enable next one
+        run: |
+          gh workflow disable "${{github.workflow}}"
+          gh workflow enable "Step 4"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

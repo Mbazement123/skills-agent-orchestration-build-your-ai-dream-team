@@ -1,0 +1,265 @@
+name: Step 1
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - docs/agent-team.md
+
+permissions:
+  contents: write
+  actions: write
+  issues: write
+
+env:
+  STEP_2_FILE: ".github/steps/2-step.md"
+
+jobs:
+  find_exercise:
+    if: github.event_name != 'push' || (github.event.created == false && github.event.head_commit.message != 'Initial commit')
+    name: Find Exercise Issue
+    uses: skills/exercise-toolkit/.github/workflows/find-exercise-issue.yml@v0.9.3
+
+  check_step_work:
+    name: Check step work
+    runs-on: ubuntu-latest
+    needs: [find_exercise]
+    env:
+      ISSUE_REPOSITORY: ${{ github.repository }}
+      ISSUE_NUMBER: ${{ needs.find_exercise.outputs.issue-number }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Get response templates
+        uses: actions/checkout@v6
+        with:
+          repository: skills/exercise-toolkit
+          path: exercise-toolkit
+          ref: v0.9.3
+
+      - name: Find last comment
+        id: find-last-comment
+        uses: peter-evans/find-comment@v4
+        with:
+          repository: ${{ env.ISSUE_REPOSITORY }}
+          issue-number: ${{ env.ISSUE_NUMBER }}
+          comment-author: github-actions[bot]
+          direction: last
+
+      - name: Update comment - checking work
+        uses: GrantBirki/comment@v2.1.1
+        with:
+          repository: ${{ env.ISSUE_REPOSITORY }}
+          issue-number: ${{ env.ISSUE_NUMBER }}
+          comment-id: ${{ steps.find-last-comment.outputs.comment-id }}
+          file: exercise-toolkit/markdown-templates/step-feedback/checking-work.md
+          edit-mode: replace
+
+      - name: Check agent team file exists
+        id: check-agent-team-file
+        continue-on-error: true
+        uses: skills/exercise-toolkit/actions/file-exists@v0.9.3
+        with:
+          file: docs/agent-team.md
+
+      - name: Check orchestrator agent exists
+        id: check-orchestrator-agent
+        continue-on-error: true
+        uses: skills/exercise-toolkit/actions/file-exists@v0.9.3
+        with:
+          file: .github/agents/orchestrator.agent.md
+
+      - name: Check planner agent exists
+        id: check-planner-agent
+        continue-on-error: true
+        uses: skills/exercise-toolkit/actions/file-exists@v0.9.3
+        with:
+          file: .github/agents/planner.agent.md
+
+      - name: Check coder agent exists
+        id: check-coder-agent
+        continue-on-error: true
+        uses: skills/exercise-toolkit/actions/file-exists@v0.9.3
+        with:
+          file: .github/agents/coder.agent.md
+
+      - name: Check designer agent exists
+        id: check-designer-agent
+        continue-on-error: true
+        uses: skills/exercise-toolkit/actions/file-exists@v0.9.3
+        with:
+          file: .github/agents/designer.agent.md
+
+      - name: Check for Orchestrator
+        id: check-orchestrator
+        continue-on-error: true
+        uses: skills/action-keyphrase-checker@v2
+        with:
+          text-file: docs/agent-team.md
+          keyphrase: Orchestrator
+          case-sensitive: false
+
+      - name: Check for Planner
+        id: check-planner
+        continue-on-error: true
+        uses: skills/action-keyphrase-checker@v2
+        with:
+          text-file: docs/agent-team.md
+          keyphrase: Planner
+          case-sensitive: false
+
+      - name: Check for Coder
+        id: check-coder
+        continue-on-error: true
+        uses: skills/action-keyphrase-checker@v2
+        with:
+          text-file: docs/agent-team.md
+          keyphrase: Coder
+          case-sensitive: false
+
+      - name: Check for Designer
+        id: check-designer
+        continue-on-error: true
+        uses: skills/action-keyphrase-checker@v2
+        with:
+          text-file: docs/agent-team.md
+          keyphrase: Designer
+          case-sensitive: false
+
+      - name: Check for updated models
+        id: check-opus-model
+        continue-on-error: true
+        uses: skills/action-keyphrase-checker@v2
+        with:
+          text-file: docs/agent-team.md
+          keyphrase: Opus 4.7
+          case-sensitive: false
+
+      - name: Check for GPT-5.5 model
+        id: check-gpt-model
+        continue-on-error: true
+        uses: skills/action-keyphrase-checker@v2
+        with:
+          text-file: docs/agent-team.md
+          keyphrase: GPT-5.5
+          case-sensitive: false
+
+      - name: Check for Gemini model
+        id: check-gemini-model
+        continue-on-error: true
+        uses: skills/action-keyphrase-checker@v2
+        with:
+          text-file: docs/agent-team.md
+          keyphrase: Gemini 3.1 Pro
+          case-sensitive: false
+
+      - name: Check learner references agent definitions
+        id: check-agent-definition-reference
+        continue-on-error: true
+        uses: skills/action-keyphrase-checker@v2
+        with:
+          text-file: docs/agent-team.md
+          keyphrase: .github/agents
+          case-sensitive: false
+
+      - name: Check Project Pulse context
+        id: check-project-pulse
+        continue-on-error: true
+        uses: skills/action-keyphrase-checker@v2
+        with:
+          text-file: docs/agent-team.md
+          keyphrase: Project Pulse
+          case-sensitive: false
+
+      - name: Update comment - step results
+        uses: GrantBirki/comment@v2.1.1
+        with:
+          repository: ${{ env.ISSUE_REPOSITORY }}
+          issue-number: ${{ env.ISSUE_NUMBER }}
+          comment-id: ${{ steps.find-last-comment.outputs.comment-id }}
+          edit-mode: replace
+          file: exercise-toolkit/markdown-templates/step-feedback/step-results-table.md
+          vars: |
+            step_number: 1
+            results_table:
+              - description: "Checked for docs/agent-team.md"
+                passed: ${{ steps.check-agent-team-file.outcome == 'success' }}
+              - description: "Checked for the Orchestrator agent definition"
+                passed: ${{ steps.check-orchestrator-agent.outcome == 'success' }}
+              - description: "Checked for the Planner agent definition"
+                passed: ${{ steps.check-planner-agent.outcome == 'success' }}
+              - description: "Checked for the Coder agent definition"
+                passed: ${{ steps.check-coder-agent.outcome == 'success' }}
+              - description: "Checked for the Designer agent definition"
+                passed: ${{ steps.check-designer-agent.outcome == 'success' }}
+              - description: "Checked for the Orchestrator role"
+                passed: ${{ steps.check-orchestrator.outcome == 'success' }}
+              - description: "Checked for the Planner role"
+                passed: ${{ steps.check-planner.outcome == 'success' }}
+              - description: "Checked for the Coder role"
+                passed: ${{ steps.check-coder.outcome == 'success' }}
+              - description: "Checked for the Designer role"
+                passed: ${{ steps.check-designer.outcome == 'success' }}
+              - description: "Checked for the updated model assignments"
+                passed: ${{ steps.check-opus-model.outcome == 'success' && steps.check-gpt-model.outcome == 'success' && steps.check-gemini-model.outcome == 'success' }}
+              - description: "Checked that the summary references .github/agents"
+                passed: ${{ steps.check-agent-definition-reference.outcome == 'success' }}
+              - description: "Checked for Project Pulse context"
+                passed: ${{ steps.check-project-pulse.outcome == 'success' }}
+
+      - name: Fail job if not all checks passed
+        if: contains(steps.*.outcome, 'failure')
+        run: exit 1
+
+  post_next_step_content:
+    name: Post next step content
+    needs: [find_exercise, check_step_work]
+    runs-on: ubuntu-latest
+    env:
+      ISSUE_REPOSITORY: ${{ github.repository }}
+      ISSUE_NUMBER: ${{ needs.find_exercise.outputs.issue-number }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Get response templates
+        uses: actions/checkout@v6
+        with:
+          repository: skills/exercise-toolkit
+          path: exercise-toolkit
+          ref: v0.9.3
+
+      - name: Create comment - step finished
+        uses: GrantBirki/comment@v2.1.1
+        with:
+          repository: ${{ env.ISSUE_REPOSITORY }}
+          issue-number: ${{ env.ISSUE_NUMBER }}
+          file: exercise-toolkit/markdown-templates/step-feedback/step-finished-prepare-next-step.md
+          vars: |
+            next_step_number: 2
+
+      - name: Create comment - add step content
+        uses: GrantBirki/comment@v2.1.1
+        with:
+          repository: ${{ env.ISSUE_REPOSITORY }}
+          issue-number: ${{ env.ISSUE_NUMBER }}
+          file: ${{ env.STEP_2_FILE }}
+
+      - name: Create comment - watching for progress
+        uses: GrantBirki/comment@v2.1.1
+        with:
+          repository: ${{ env.ISSUE_REPOSITORY }}
+          issue-number: ${{ env.ISSUE_NUMBER }}
+          file: exercise-toolkit/markdown-templates/step-feedback/watching-for-progress.md
+
+      - name: Disable current workflow and enable next one
+        run: |
+          gh workflow disable "${{github.workflow}}"
+          gh workflow enable "Step 2"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

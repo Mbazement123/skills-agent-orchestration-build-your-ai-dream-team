@@ -1,0 +1,30 @@
+{
+  "name": "Agent Orchestration: Build Your AI Dream Team",
+  "image": "mcr.microsoft.com/devcontainers/universal:2",
+  "waitFor": "postCreateCommand",
+  "postCreateCommand": "bash .devcontainer/postCreate.sh",
+  "postStartCommand": "true",
+  "remoteEnv": {
+    "PATH": "${containerEnv:PATH}:/home/codespace/.local/bin"
+  },
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "task.allowAutomaticTasks": "on",
+        "terminal.integrated.defaultProfile.linux": "bash",
+        "terminal.integrated.defaultLocation": "editor",
+        "terminal.integrated.tabs.enabled": true,
+        "terminal.integrated.copyOnSelection": true,
+        "terminal.integrated.rightClickBehavior": "copyPaste",
+        "terminal.integrated.enableMultiLinePasteWarning": false,
+        "terminal.integrated.cwd": "${workspaceFolder}",
+        "workbench.startupEditor": "readme"
+      },
+      "extensions": [
+        "GitHub.copilot",
+        "GitHub.copilot-chat",
+        "GitHub.vscode-github-actions"
+      ]
+    }
+  }
+}
